@@ -14,7 +14,7 @@ fi
 INPUT_DIR_PATH=$1
 OUTPUT_DIR_PATH=$2
 PREPROCESSING_DIR_PATH=$3
-METADATAPATH_DIR_PATH=$4
+METADATA_DIR_PATH=$4
 
 # Global variables
 SANDBOX=$(pwd)
@@ -43,7 +43,7 @@ echo "Station path: $IMAGE_STATION_FILE_PATH"
 
 echo "Step 2. Creating dados.csv for image $IMAGE_NAME"
 
-echo "File images;MTL;Path Prepoc;File Station Weather;Path Output" > $R_EXEC_DIR/dados.csv
+echo "File images;Path Prepoc;MTL;File Station Weather;Path Output" > $R_EXEC_DIR/dados.csv
 echo "$INPUT_DIR_PATH;$PREPROCESSING_DIR_PATH;$IMAGE_MTL_PATH;$IMAGE_STATION_FILE_PATH;$OUTPUT_DIR_PATH" >> $R_EXEC_DIR/dados.csv
 
 echo "Step 3. Starting CPU, disk and Memory collect..."
@@ -58,7 +58,7 @@ for i in `seq $MAX_TRIES`
   do
   
   rm -rf $TMP_DIR_PATH/* $METADATA_DIR_PATH/*
-  bash $SCRIPTS_DIR/executeRScript.sh $R_EXEC_DIR/$R_ALGORITHM_PREPROCESSING_VERSION $R_EXEC_DIR $TMP_DIR_PATH $METADATA_DIR_PATH
+  bash $SCRIPTS_DIR/executeRScript.sh $R_EXEC_DIR/$R_ALGORITHM_PROCESSING_VERSION $R_EXEC_DIR $TMP_DIR_PATH $METADATA_DIR_PATH
   PROCESS_OUTPUT=$?
   
   echo "executeRScript_process_output=$PROCESS_OUTPUT"
