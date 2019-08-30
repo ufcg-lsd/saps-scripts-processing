@@ -57,7 +57,7 @@ echo "Step 4. Executing R script"
 for i in `seq $MAX_TRIES`
   do
   
-  rm -r $TMP_DIR_PATH/* $METADATA_DIR_PATH/*
+  rm -rf $TMP_DIR_PATH/* $METADATA_DIR_PATH/*
   bash $SCRIPTS_DIR/executeRScript.sh $R_EXEC_DIR/$R_ALGORITHM_PREPROCESSING_VERSION $R_EXEC_DIR $TMP_DIR_PATH $METADATA_DIR_PATH
   PROCESS_OUTPUT=$?
   
