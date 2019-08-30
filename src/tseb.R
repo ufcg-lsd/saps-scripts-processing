@@ -47,10 +47,6 @@ acquired_date <- as.Date(MTL$V2[MTL$V1==grep(pattern="DATE_ACQUIRED", MTL$V1, va
 daysSince1970 <- as.numeric(acquired_date)
 tdim <- ncdim_def("time", "days since 1970-1-1", daysSince1970, unlim=TRUE, create_dimvar=TRUE, "standard", "time")
 
-# Defining latitude and longitude dimensions
-dimLatDef <- ncdim_def("lat", "degrees", oldLat, unlim=FALSE, longname="latitude")
-dimLonDef <- ncdim_def("lon", "degrees", oldLon, unlim=FALSE, longname="longitude")
-
 fic.preproc <- dados$Path.Prepoc[1]
 
 raster.elevation <- raster(paste(fic.preproc, "/elevation.tif", sep=""))
@@ -83,6 +79,14 @@ proc.time()
 # Opening old EF NetCDF
 var_output<-paste(dados$Path.Output[1],"/",fic,"_EF.nc",sep="")
 nc<-nc_open(var_output, write=TRUE,readunlim=FALSE,verbose=TRUE,auto_GMT=FALSE,suppress_dimvals=FALSE)
+
+# Getting lat and lon values from old NetCDF
+oldLat <- ncvar_get(nc, "lat", start=1, count=raster.elevation@nrows)
+oldLon <- ncvar_get(nc, "lon", start=1, count=raster.elevation@ncols)
+
+# Defining latitude and longitude dimensions
+dimLatDef <- ncdim_def("lat", "degrees", oldLat, unlim=FALSE, longname="latitude")
+dimLonDef <- ncdim_def("lon", "degrees", oldLon, unlim=FALSE, longname="longitude")
 
 # New EF file name
 file_output<-paste(dados$Path.Output[1],"/",fic,"_EF.nc",sep="")
