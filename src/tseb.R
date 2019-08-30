@@ -47,6 +47,10 @@ acquired_date <- as.Date(MTL$V2[MTL$V1==grep(pattern="DATE_ACQUIRED", MTL$V1, va
 daysSince1970 <- as.numeric(acquired_date)
 tdim <- ncdim_def("time", "days since 1970-1-1", daysSince1970, unlim=TRUE, create_dimvar=TRUE, "standard", "time")
 
+# Defining latitude and longitude dimensions
+dimLatDef <- ncdim_def("lat", "degrees", oldLat, unlim=FALSE, longname="latitude")
+dimLonDef <- ncdim_def("lon", "degrees", oldLon, unlim=FALSE, longname="longitude")
+
 fic.preproc <- dados$Path.Prepoc[1]
 
 raster.elevation <- raster(paste(fic.preproc, "/elevation.tif", sep=""))
