@@ -40,6 +40,8 @@ hour.image <- (as.numeric(substr(MTL$V2[MTL$V1 == grep(pattern="SCENE_CENTER_TIM
                  as.numeric(substr(MTL$V2[MTL$V1 == grep(pattern="SCENE_CENTER_TIME", MTL$V1, value=T)], 6, 7))/60)*100
 hour.image.station<-which.min(abs(table.sw$V3[]-hour.image))
 
+output.path<-paste(dados$Path.Output[1], "/", fic, ".nc", sep="")
+
 # Time image
 acquired_date <- as.Date(MTL$V2[MTL$V1==grep(pattern="DATE_ACQUIRED", MTL$V1, value=TRUE)])
 daysSince1970 <- as.numeric(acquired_date)
@@ -71,27 +73,6 @@ series=tseb(Ts=Ts,LAI=LAI,DOY=Dia.juliano,xyhot="full",
 output.evapo<-stack(series$EF, series$ET24)
 names(output.evapo)<-c('EF','ET24h')
 writeRaster(output.evapo, output.path, overwrite=TRUE, format="CDF", varname=fic, varunit="daily", longname=fic, xname="lon", yname="lat", bylayer=TRUE, suffix="names")
-
-#Opening old SAVI NetCDF
-var_output <- paste(dados$Path.Output[1], "/", fic, "_SAVI.nc", sep="")
-nc <- nc_open(var_output, write=TRUE, readunlim=FALSE, verbose=TRUE, auto_GMT=FALSE, suppress_dimvals=FALSE)
-
-# Getting lat and lon values from old NetCDF
-oldLat <- ncvar_get(nc, "lat", start=1, count=raster.elevation@nrows)
-oldLon <- ncvar_get(nc, "lon", start=1, count=raster.elevation@ncols)
-
-# Defining latitude and longitude dimensions
-dimLatDef <- ncdim_def("lat", "degrees", oldLat, unlim=FALSE, longname="latitude")
-dimLonDef <- ncdim_def("lon", "degrees", oldLon, unlim=FALSE, longname="longitude")
-
-# New SAVI file name
-file_output <- paste(dados$Path.Output[1], "/", fic, "_SAVI.nc", sep="")
-oldSAVIValues <- ncvar_get(nc, fic)
-newSAVIValues <- ncvar_def("SAVI", "daily", list(dimLonDef, dimLatDef, tdim), longname="SAVI", missval=NaN, prec="double")
-nc_close(nc)
-newSAVINCDF4 <- nc_create(file_output, newSAVIValues)
-ncvar_put(newSAVINCDF4, "SAVI", oldSAVIValues, start=c(1, 1, 1), count=c(raster.elevation@ncols, raster.elevation@nrows, 1))
-nc_close(newSAVINCDF4)
 
 proc.time()
 
