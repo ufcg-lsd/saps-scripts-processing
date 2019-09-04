@@ -15,7 +15,6 @@ library(maptools)
 library(ncdf4)
 library(sp)
 library(snow)
-#library(remotes)
 library(sebkc)
 
 ##### Opening files ######
@@ -40,6 +39,14 @@ table.sw <- (read.csv(fic.sw, sep=";", header=FALSE, stringsAsFactors=FALSE))
 hour.image <- (as.numeric(substr(MTL$V2[MTL$V1 == grep(pattern="SCENE_CENTER_TIME", MTL$V1, value=T)], 3, 4))+
                  as.numeric(substr(MTL$V2[MTL$V1 == grep(pattern="SCENE_CENTER_TIME", MTL$V1, value=T)], 6, 7))/60)*100
 hour.image.station<-which.min(abs(table.sw$V3[]-hour.image))
+dist.dia.juliano <- as.numeric(MTL$V2[MTL$V1 == grep(pattern="EARTH_SUN_DISTANCE", MTL$V1, value=TRUE)])
+
+output.path<-paste(dados$Path.Output[1], "/", fic, ".nc", sep="")
+
+# Time image
+acquired_date <- as.Date(MTL$V2[MTL$V1==grep(pattern="DATE_ACQUIRED", MTL$V1, value=TRUE)])
+daysSince1970 <- as.numeric(acquired_date)
+tdim <- ncdim_def("time", "days since 1970-1-1", daysSince1970, unlim=TRUE, create_dimvar=TRUE, "standard", "time")
 
 fic.preproc <- dados$Path.Prepoc[1]
 
@@ -50,36 +57,51 @@ NDVI <- raster(paste(fic.preproc, "/", fic, "_NDVI.nc", sep=""))
 LAI <- raster(paste(fic.preproc, "/", fic, "_LAI.nc", sep=""))
 SAVI <- raster(paste(fic.preproc, "/", fic, "_SAVI.nc", sep=""))
 
-output.path<-paste(dados$Path.Output[1], "/", fic, ".nc", sep="")
-
-# Time image
-acquired_date <- as.Date(MTL$V2[MTL$V1==grep(pattern="DATE_ACQUIRED", MTL$V1, value=TRUE)])
-daysSince1970 <- as.numeric(acquired_date)
-tdim <- ncdim_def("time", "days since 1970-1-1", daysSince1970, unlim=TRUE, create_dimvar=TRUE, "standard", "time")
-
 ##### Opening files ######
 
-azom<- -3    #Par?metro para o Zom imagem
-bzom<- 6.47  #Par?metro para o Zom imagem
+azom<- -3    #Parametro para o Zom imagem
+bzom<- 6.47  #Parametro para o Zom imagem
 zom<- exp(azom+bzom*NDVI)
+
+# Upscalling temporal
+Lat<-table.sw$V4[1] 	                            # Station Latitude
+Gsc <- 0.082		                                # Solar constant (0.0820 MJ m-2 min-1)
+F_int <- 0.16	                                    # Internalization factor for Rs 24 calculation (default value)
+dr<-(1/dist.dia.juliano)^2 		                    # Inverse square of the distance on Earth-SOL
+sigma<-0.409*sin(((2*pi/365)*Dia.juliano)-1.39)     # Declination Solar (rad)
+phi<-(pi/180)*Lat 					                # Solar latitude in degrees
+omegas<-acos(-tan(phi)*tan(sigma)) 			        # Angle Time for sunsets (rad)
+Ra24h<-(((24*60/pi)*Gsc*dr)*(omegas*sin(phi)*
+        sin(sigma)+cos(phi)*cos(sigma)*sin(omegas)))*(1000000/86400)
+
+# Short wave radiation incident in 24 hours (Rs24h)
+Rs24h<-F_int*sqrt(max(table.sw$V7[])-min(table.sw$V7[]))*Ra24h
+
+FL<-110                                
+Rn24h<-(1-albedo[])*Rs24h-FL*Rs24h/Ra24h
+
+proc.time()
 
 series=sebal(albedo, Ts, NDVI, SAVI, welev=385, xyhot = "auto", xycold = "auto",
     DOY = Dia.juliano, sunelev=sun_elevation, zx = 10,
     u = table.sw$V6[hour.image.station], zomw = 0.2, zom = zom,
-    LAI = LAI, DEM=raster.elevation, lapse = 0.0065, Rn24 = NULL, ETr = NULL,
+    LAI = LAI, DEM=raster.elevation, lapse = 0.0065, Rn24 = Rn24h, ETr = NULL,
     ETr24 = NULL, wmo = NULL, airport = NULL, Krs = 0.19,
     surface = "grass", latitude = table.sw$V4[1], t1 = 1, 
     time = 12.5, Lz = NULL, Lm = NULL, model = "SEBAL", iter.max = 7, clip = NULL,
     folder = NULL)
 
-output.evapo<-stack(series$EF, series$ETins,series$Rn,series$G)
-names(output.evapo)<-c('EF','ET24h',"Rn","G")
+proc.time()
+
+output.evapo<-stack(series$EF, series$ET24)
+names(output.evapo)<-c('EF','ET24h')
 writeRaster(output.evapo, output.path, overwrite=TRUE, format="CDF", varname=fic, varunit="daily", longname=fic, xname="lon", yname="lat", bylayer=TRUE, suffix="names")
 
+proc.time()
 
-# Opening old G NetCDF
-var_output <- paste(dados$Path.Output[1], "/", fic, "_G.nc", sep="")
-nc<-nc_open(var_output, write=TRUE, readunlim=FALSE, verbose=TRUE, auto_GMT=FALSE, suppress_dimvals=FALSE)
+# Opening old EF NetCDF
+var_output<-paste(dados$Path.Output[1],"/",fic,"_EF.nc",sep="")
+nc<-nc_open(var_output, write=TRUE,readunlim=FALSE,verbose=TRUE,auto_GMT=FALSE,suppress_dimvals=FALSE)
 
 # Getting lat and lon values from old NetCDF
 oldLat <- ncvar_get(nc, "lat", start=1, count=raster.elevation@nrows)
@@ -88,37 +110,6 @@ oldLon <- ncvar_get(nc, "lon", start=1, count=raster.elevation@ncols)
 # Defining latitude and longitude dimensions
 dimLatDef <- ncdim_def("lat", "degrees", oldLat, unlim=FALSE, longname="latitude")
 dimLonDef <- ncdim_def("lon", "degrees", oldLon, unlim=FALSE, longname="longitude")
-
-# New G file name
-file_output <- paste(dados$Path.Output[1], "/", fic, "_G.nc", sep="")
-oldGValues <- ncvar_get(nc, fic)
-newGValues <- ncvar_def("G", "daily", list(dimLonDef, dimLatDef, tdim), longname="G", missval=NaN, prec="double")
-nc_close(nc)
-newGNCDF4 <- nc_create(file_output, newGValues)
-ncvar_put(newGNCDF4, "G", oldGValues, start=c(1, 1, 1), count=c(raster.elevation@ncols, raster.elevation@nrows, 1))
-nc_close(newGNCDF4)
-
-proc.time()
-
-# Opening old Rn NetCDF
-var_output <- paste(dados$Path.Output[1], "/", fic, "_Rn.nc", sep="")
-nc<-nc_open(var_output, write=TRUE, readunlim=FALSE, verbose=TRUE, auto_GMT=FALSE, suppress_dimvals=FALSE)
-
-# New Rn file name
-file_output <- paste(dados$Path.Output[1], "/", fic, "_Rn.nc", sep="")
-oldRnValues <- ncvar_get(nc, fic)
-newRnValues <- ncvar_def("Rn", "daily",list(dimLonDef, dimLatDef, tdim), longname="Rn", missval=NaN, prec="double")
-nc_close(nc)
-newRnNCDF4 <- nc_create(file_output, newRnValues)
-ncvar_put(newRnNCDF4, "Rn", oldRnValues, start=c(1, 1, 1), count=c(raster.elevation@ncols, raster.elevation@nrows, 1))
-nc_close(newRnNCDF4)
-
-proc.time()
-
-
-# Opening old EF NetCDF
-var_output<-paste(dados$Path.Output[1],"/",fic,"_EF.nc",sep="")
-nc<-nc_open(var_output, write=TRUE,readunlim=FALSE,verbose=TRUE,auto_GMT=FALSE,suppress_dimvals=FALSE)
 
 # New EF file name
 file_output<-paste(dados$Path.Output[1],"/",fic,"_EF.nc",sep="")
