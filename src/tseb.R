@@ -39,6 +39,7 @@ table.sw <- (read.csv(fic.sw, sep=";", header=FALSE, stringsAsFactors=FALSE))
 hour.image <- (as.numeric(substr(MTL$V2[MTL$V1 == grep(pattern="SCENE_CENTER_TIME", MTL$V1, value=T)], 3, 4))+
                  as.numeric(substr(MTL$V2[MTL$V1 == grep(pattern="SCENE_CENTER_TIME", MTL$V1, value=T)], 6, 7))/60)*100
 hour.image.station<-which.min(abs(table.sw$V3[]-hour.image))
+dist.dia.juliano <- as.numeric(MTL$V2[MTL$V1 == grep(pattern="EARTH_SUN_DISTANCE", MTL$V1, value=TRUE)])
 
 output.path<-paste(dados$Path.Output[1], "/", fic, ".nc", sep="")
 
@@ -58,17 +59,39 @@ SAVI <- raster(paste(fic.preproc, "/", fic, "_SAVI.nc", sep=""))
 
 ##### Opening files ######
 
-azom<- -3    #Par?metro para o Zom imagem
-bzom<- 6.47  #Par?metro para o Zom imagem
+azom<- -3    #Parametro para o Zom imagem
+bzom<- 6.47  #Parametro para o Zom imagem
 zom<- exp(azom+bzom*NDVI)
-series=tseb(Ts=Ts,LAI=LAI,DOY=Dia.juliano,xyhot="full",
-        xycold="full",albedo=albedo,Tmax=max(table.sw$V7[]),
-        Tmin=min(table.sw$V7[]),RHmax=NULL,RHmin=NULL,zom=zom,
-        NDVI=NDVI,SAVI=NULL,hc=3,DEM=raster.elevation,viewangle=0,
+
+# Upscalling temporal
+Lat<-table.sw$V4[1] 	                            # Station Latitude
+Gsc <- 0.082		                                # Solar constant (0.0820 MJ m-2 min-1)
+F_int <- 0.16	                                    # Internalization factor for Rs 24 calculation (default value)
+dr<-(1/dist.dia.juliano)^2 		                    # Inverse square of the distance on Earth-SOL
+sigma<-0.409*sin(((2*pi/365)*Dia.juliano)-1.39)     # Declination Solar (rad)
+phi<-(pi/180)*Lat 					                # Solar latitude in degrees
+omegas<-acos(-tan(phi)*tan(sigma)) 			        # Angle Time for sunsets (rad)
+Ra24h<-(((24*60/pi)*Gsc*dr)*(omegas*sin(phi)*
+        sin(sigma)+cos(phi)*cos(sigma)*sin(omegas)))*(1000000/86400)
+
+# Short wave radiation incident in 24 hours (Rs24h)
+Rs24h<-F_int*sqrt(max(table.sw$V7[])-min(table.sw$V7[]))*Ra24h
+
+FL<-110                                
+Rn24h<-(1-albedo[])*Rs24h-FL*Rs24h/Ra24h
+
+proc.time()
+
+series=tseb(Ts=Ts, LAI=LAI, DOY=Dia.juliano, xyhot="full",
+        xycold="full", albedo=albedo, Tmax=max(table.sw$V7[]),
+        Tmin=min(table.sw$V7[]), RHmax=NULL, RHmin=NULL, zom=zom,
+        NDVI=NDVI, SAVI=NULL, hc=3, DEM=raster.elevation, viewangle=0,
         sunelev=sun_elevation, welev=385, 
-        u=table.sw$V6[hour.image.station],s=2,C=90,lapse=0.0065,
-        Rn24=NULL,zx=200,zomw=0.2,xPT=1.3,clump=1,fg=1,fc="auto",
-        network="series",latitude=table.sw$V4[1],n=12)
+        u=table.sw$V6[hour.image.station], s=2, C=90, lapse=0.0065,
+        Rn24 = Rn24h, zx=200, zomw=0.2, xPT=1.3, clump=1, fg=1, fc="auto",
+        network="series", latitude=table.sw$V4[1], n=12)
+
+proc.time()
 
 output.evapo<-stack(series$EF, series$ET24)
 names(output.evapo)<-c('EF','ET24h')
