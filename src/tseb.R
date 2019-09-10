@@ -89,7 +89,7 @@ series=tseb(Ts=Ts, LAI=LAI, DOY=Dia.juliano, xyhot="full",
         sunelev=sun_elevation, welev=385, 
         u=table.sw$V6[hour.image.station], s=2, C=90, lapse=0.0065,
         Rn24 = Rn24h, zx=200, zomw=0.2, xPT=1.3, clump=1, fg=1, fc="auto",
-        network="series", latitude=table.sw$V4[1], n=12)
+        network="series", latitude=table.sw$V4[1], n=12, ETr = 10)
 
 proc.time()
 
