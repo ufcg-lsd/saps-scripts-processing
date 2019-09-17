@@ -39,7 +39,7 @@ table.sw <- (read.csv(fic.sw, sep=";", header=FALSE, stringsAsFactors=FALSE))
 hour.image <- (as.numeric(substr(MTL$V2[MTL$V1 == grep(pattern="SCENE_CENTER_TIME", MTL$V1, value=T)], 3, 4))+
                  as.numeric(substr(MTL$V2[MTL$V1 == grep(pattern="SCENE_CENTER_TIME", MTL$V1, value=T)], 6, 7))/60)*100
 hour.image.station<-which.min(abs(table.sw$V3[]-hour.image))
-dist.dia.juliano <- as.numeric(MTL$V2[MTL$V1 == grep(pattern="EARTH_SUN_DISTANCE", MTL$V1, value=TRUE])
+dist.dia.juliano <- as.numeric(MTL$V2[MTL$V1 == grep(pattern="EARTH_SUN_DISTANCE", MTL$V1, value=TRUE)])
 
 output.path<-paste(dados$Path.Output[1], "/", fic, ".nc", sep="")
 
@@ -50,6 +50,19 @@ tdim <- ncdim_def("time", "days since 1970-1-1", daysSince1970, unlim=TRUE, crea
 
 fic.preproc <- dados$Path.Prepoc[1]
 raster.elevation <- raster(paste(fic.preproc, "/elevation.tif", sep=""))
+
+nc<-nc_open(paste(fic.preproc, "/", fic, "_alb.nc", sep=""), write=TRUE, readunlim=FALSE, verbose=TRUE, auto_GMT=FALSE, suppress_dimvals=FALSE)
+
+# Getting lat and lon values from old NetCDF
+oldLat <- ncvar_get(nc, "lat", start=1, count=raster.elevation@nrows)
+oldLon <- ncvar_get(nc, "lon", start=1, count=raster.elevation@ncols)
+
+# Defining latitude and longitude dimensions
+dimLatDef <- ncdim_def("lat", "degrees", oldLat, unlim=FALSE, longname="latitude")
+dimLonDef <- ncdim_def("lon", "degrees", oldLon, unlim=FALSE, longname="longitude")
+
+nc_close(nc)
+
 alb <- raster(paste(fic.preproc, "/", fic, "_alb.nc", sep=""))
 TS <- raster(paste(fic.preproc, "/", fic, "_TS.nc", sep=""))
 NDVI <- raster(paste(fic.preproc, "/", fic, "_NDVI.nc", sep=""))
