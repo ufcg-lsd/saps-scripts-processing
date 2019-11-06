@@ -225,7 +225,7 @@ phase2 <- function() {
   # All pixels
   
   H<-rho*cp*(a+b*(TS[]-273.15))/rah[] # Vector 
-  H[(H>(Rn[]-G[]) &!is.na(H))]<-(Rn[]-G[])[(H>(Rn[]-G[]) &!is.na(H))] # Vector
+  H[(!is.na(H) & H>(Rn[]-G[]))]<-(Rn[]-G[])[(H>(!is.na(H) & Rn[]-G[]) )] # Vector
   
   print(proc.time())
   
