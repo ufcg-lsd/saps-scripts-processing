@@ -138,9 +138,6 @@ x<-TS[][(NDVI[]<0 &!is.na(NDVI[])) & !is.na(HO)]
 x<-x[x>273.16]
 TS.c.cold<-sort(x)[round(0.5*length(x))]
 
-rm(x)
-gc()
-
 c.cold.HO<-HO[(NDVI[]<0 & !is.na(NDVI[])) & TS[]==TS.c.cold & !is.na(HO)]
 if (length(c.cold.HO)==1){
   ll.cold<-which(TS[]==TS.c.cold & HO==c.cold.HO)
