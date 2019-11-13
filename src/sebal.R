@@ -93,10 +93,7 @@ TS.c.hot<-sort(x)[round(0.99*length(x))] # Returns one value
 rm(x)
 gc()
 
-c.hot.HO<-HO[][(NDVI[]>0.15 &!is.na(NDVI[])) & (NDVI[]<0.20 &!is.na(NDVI[])) & TS[]==TS.c.hot] # Returns one value
-
-rm(HO)
-gc()
+c.hot.HO<-HO[][(NDVI[]>0.15 &!is.na(NDVI[])) & (NDVI[]<0.20 &!is.na(NDVI[])) & TS[]==TS.c.hot] # Returns one value0
 
 if (length(c.hot.HO)==1){
   ll.hot<-which(TS[]==TS.c.hot & HO[]==c.hot.HO)
@@ -184,6 +181,7 @@ if (length(c.cold.HO)==1){
   ll.cold.f<-cbind(as.vector(xy.cold[i.cold.NDVI,1]), as.vector(xy.cold[i.cold.NDVI,2]))
 }
 
+rm(HO)
 gc()
 
 print("SelectionCandidatesColdPixel")
