@@ -118,16 +118,17 @@ if (length(c.hot.HO)==1){
   gc()
 
   hot.NDVI<-extract(NDVI,xy.hot, buffer=105)
-  hot.NDVI.2<-hot.NDVI[!sapply(hot.NDVI, is.null)]
+  aux.hot.NDVI<-hot.NDVI[!sapply(hot.NDVI, is.null)]
 
   rm(hot.NDVI)
   gc()
 
-  hot.NDVI.cv <- sapply(hot.NDVI.2,sd, na.rm=TRUE)/sapply(hot.NDVI.2, mean, na.rm=TRUE)
+  hot.NDVI.cv <- sapply(aux.hot.NDVI,sd, na.rm=TRUE)/sapply(aux.hot.NDVI, mean, na.rm=TRUE)
   i.hot.NDVI.cv<-which.min(hot.NDVI.cv)
   ll.hot.f<-cbind(as.vector(xy.hot[i.hot.NDVI.cv,1]), as.vector(xy.hot[i.hot.NDVI.cv,2]))
 }
 
+rm(c.hot.HO)
 gc()
 
 print("SelectionCandidatesHotPixel")
@@ -162,23 +163,20 @@ if (length(c.cold.HO)==1){
   gc()
 
   cold.NDVI<-extract(NDVI,xy.cold, buffer=105)
-  cold.NDVI.2<-cold.NDVI[!sapply(cold.NDVI, is.null)]
+  aux.cold.NDVI<-cold.NDVI[!sapply(cold.NDVI, is.null)]
   
   rm(cold.NDVI)
   gc()
 
   # Maximum number of neighboring pixels with $NVDI < 0$
   t<-function(x){ sum(x<0,na.rm = TRUE)}
-  n.neg.NDVI<-sapply(cold.NDVI.2,t)
-
-  rm(x)
-  gc()
+  n.neg.NDVI<-sapply(aux.cold.NDVI,t)
 
   i.cold.NDVI<-which.max(n.neg.NDVI)
   ll.cold.f<-cbind(as.vector(xy.cold[i.cold.NDVI,1]), as.vector(xy.cold[i.cold.NDVI,2]))
 }
 
-rm(HO)
+rm(HO, c.cold.HO, x)
 gc()
 
 print("SelectionCandidatesColdPixel")
@@ -278,7 +276,7 @@ rahCycle <- function(){
     i<-i+1
   }
 
-  rm(H, L, y_0.1, y_2, x200, psi_0.1, psi_2, psi_200)
+  rm(H, L, y_0.1, y_2, x200, psi_0.1, psi_2, psi_200, ll_ref)
   gc()
 
   return (rah.hot)
@@ -307,7 +305,7 @@ dt.hot<-H.hot*rah.hot/(rho*cp)
 b<-dt.hot/(value.pixels.ref["hot","TS"]-value.pixels.ref["cold","TS"]) 
 a<- -b*(value.pixels.ref["cold","TS"]-273.15)       
 
-rm(value.pixels.ref, ll_ref)
+rm(value.pixels.ref)
 gc()                   
 
 proc.time()
@@ -318,7 +316,7 @@ H<-rho*cp*(a+b*(TS[]-273.15))/rah[] # Vector
 subset <- !is.na(H) & !is.na(Rn[]-G[]) & H > (Rn[]-G[])
 H[subset] <- Rn[subset]-G[subset]# Vector
 
-rm(rah, subset)
+rm(rah, subset, TS)
 gc()
 
 proc.time()
@@ -349,11 +347,14 @@ Rs24h<-F_int*sqrt(max(table.sw$V7[])-min(table.sw$V7[]))*Ra24h
 FL<-110                                
 Rn24h_dB<-(1-alb[])*Rs24h-FL*Rs24h/Ra24h		# Method of Bruin #VETOR
 
+rm(alb)
+gc()
+
 # Evapotranspiration fraction Bastiaanssen
 EF<-NDVI
 EF[]<-LE/(aux)
 
-rm(LE)
+rm(LE, aux)
 gc()
 
 # Sensible heat flux 24 hours (H24h)
@@ -369,7 +370,7 @@ gc()
 ET24h_dB<-NDVI
 ET24h_dB[]<-LE24h_dB*86400/((2.501-0.00236* (max(table.sw$V7[])+min(table.sw$V7[]))/2)*10^6)
 
-rm(LE24h_dB)
+rm(LE24h_dB, NDVI)
 gc()
 
 print("CalculateEvapo24h")
