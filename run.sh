@@ -29,6 +29,13 @@ INPUTDOWNLOADING_DIR_PATH=$ROOT_DIR/inputdownloading
 PREPROCESSING_DIR_PATH=$ROOT_DIR/preprocessing
 PROCESSING_DIR_PATH=$ROOT_DIR/processing
 
+# files
+TIME_FILE=$PROCESSING_DIR_PATH/timestamp
+
+echo "Step 0. Time (start)"
+touch $TIME_FILE
+echo "START `date +"%s"`" >> $TIME_FILE
+
 echo "Step 1. Capture MTL and station path"
 
 files=($INPUTDOWNLOADING_DIR_PATH/*_MTL.txt)
@@ -93,6 +100,9 @@ mv $R_EXEC_DIR/dados.csv $PROCESSING_DIR_PATH
 
 echo "Step 7. Generate metadata"
 bash $SANDBOX/generate_metadata.sh $INPUTDOWNLOADING_DIR_PATH $PREPROCESSING_DIR_PATH $PROCESSING_DIR_PATH
+
+echo "Step 8. Time (finish)"
+echo "START `date +"%s"`" >> $TIME_FILE
 
 ## Exit code
 # exit code `0` indicates a successful execution. Any other number indicates failure.
