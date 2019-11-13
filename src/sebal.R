@@ -278,18 +278,23 @@ rahCycle <- function(){
     i<-i+1
   }
 
+  rm(H, L, y_0.1, y_2, x200, psi_0.1, psi_2, psi_200)
+  gc()
+
+  return (rah.hot)
 }
 
+rah.hot <- NULL;
 tryCatch({
   res <- withTimeout({
-    rahCycle();
+    rah.hot <- rahCycle();
   }, timeout=1800);
 }, TimeoutException=function(ex) {
   cat("Image phase two processing timedout. Exiting with 124 code...\n");
   quit("no", 124, FALSE)
 })
 
-rm(zom, ustar, H, L, y_0.1, y_2, x200, psi_0.1, psi_2, psi_200)
+rm(zom, ustar)
 gc()
 
 print("RahCycle")
