@@ -63,7 +63,7 @@ dimLonDef <- ncdim_def("lon", "degrees", oldLon, unlim=FALSE, longname="longitud
 
 nc_close(nc)
 
-#gc()
+gc()
 
 alb <- raster(paste(fic.preproc, "/", fic, "_alb.nc", sep=""))
 TS <- raster(paste(fic.preproc, "/", fic, "_TS.nc", sep=""))
@@ -90,19 +90,17 @@ x<-TS[][(NDVI[]>0.15 &!is.na(NDVI[]))  & (NDVI[]<0.20 &!is.na(NDVI[])) ] # Retur
 x<-x[x>273.16]
 TS.c.hot<-sort(x)[round(0.99*length(x))] # Returns one value
 
-#rm(x)
-#gc()
+rm(x)
+gc()
 
 c.hot.HO<-HO[][(NDVI[]>0.15 &!is.na(NDVI[])) & (NDVI[]<0.20 &!is.na(NDVI[])) & TS[]==TS.c.hot] # Returns one value0
-
-print (length(c.hot.HO))
 
 if (length(c.hot.HO)==1){
   ll.hot<-which(TS[]==TS.c.hot & HO[]==c.hot.HO)
   xy.hot <- xyFromCell(TS, ll.hot)
 
-  #rm(ll.hot)
-  #gc()
+  rm(ll.hot)
+  gc()
 
   ll.hot.f<-cbind(as.vector(xy.hot[1,1]), as.vector(xy.hot[1,2]))
 }else{
@@ -110,28 +108,28 @@ if (length(c.hot.HO)==1){
   c.hot.HO.min<-c.hot.HO.sort[ceiling(0.25*length(c.hot.HO))]
   c.hot.HO.max<-c.hot.HO.sort[round(0.75*length(c.hot.HO))]
 
-  #rm(c.hot.HO.sort)
-  #gc()
+  rm(c.hot.HO.sort)
+  gc()
 
   ll.hot<-which(TS[]==TS.c.hot & HO[]>=c.hot.HO.min & HO[]<=c.hot.HO.max)
   xy.hot <- xyFromCell(TS, ll.hot)
 
-  #rm(ll.hot)
-  #gc()
+  rm(ll.hot)
+  gc()
 
   hot.NDVI<-extract(NDVI,xy.hot, buffer=105)
   aux.hot.NDVI<-hot.NDVI[!sapply(hot.NDVI, is.null)]
 
-  #rm(hot.NDVI)
-  #gc()
+  rm(hot.NDVI)
+  gc()
 
   hot.NDVI.cv <- sapply(aux.hot.NDVI,sd, na.rm=TRUE)/sapply(aux.hot.NDVI, mean, na.rm=TRUE)
   i.hot.NDVI.cv<-which.min(hot.NDVI.cv)
   ll.hot.f<-cbind(as.vector(xy.hot[i.hot.NDVI.cv,1]), as.vector(xy.hot[i.hot.NDVI.cv,2]))
 }
 
-#rm(c.hot.HO)
-#gc()
+rm(c.hot.HO)
+gc()
 
 print("SelectionCandidatesHotPixel")
 proc.time()
@@ -146,8 +144,8 @@ if (length(c.cold.HO)==1){
   ll.cold<-which(TS[]==TS.c.cold & HO==c.cold.HO)
   xy.cold <- xyFromCell(TS, ll.cold)
 
-  #rm(ll.cold)
-  #gc()
+  rm(ll.cold)
+  gc()
 
   ll.cold.f<-cbind(as.vector(xy.cold[1,1]), as.vector(xy.cold[1,2]))
 }else{
@@ -155,20 +153,20 @@ if (length(c.cold.HO)==1){
   c.cold.HO.min<-c.cold.HO.sort[ceiling(0.25*length(c.cold.HO))]
   c.cold.HO.max<-c.cold.HO.sort[round(0.75*length(c.cold.HO))]
 
-  #rm(c.cold.HO.sort)
-  #gc()
+  rm(c.cold.HO.sort)
+  gc()
 
   ll.cold<-which(TS[]==TS.c.cold & (HO>=c.cold.HO.min &!is.na(HO)) & (HO<=c.cold.HO.max & !is.na(HO)))
   xy.cold <- xyFromCell(TS, ll.cold)
 
-  #rm(ll.cold)
-  #gc()
+  rm(ll.cold)
+  gc()
 
   cold.NDVI<-extract(NDVI,xy.cold, buffer=105)
   aux.cold.NDVI<-cold.NDVI[!sapply(cold.NDVI, is.null)]
   
-  #rm(cold.NDVI)
-  #gc()
+  rm(cold.NDVI)
+  gc()
 
   # Maximum number of neighboring pixels with $NVDI < 0$
   t<-function(x){ sum(x<0,na.rm = TRUE)}
@@ -178,8 +176,8 @@ if (length(c.cold.HO)==1){
   ll.cold.f<-cbind(as.vector(xy.cold[i.cold.NDVI,1]), as.vector(xy.cold[i.cold.NDVI,2]))
 }
 
-#rm(HO, c.cold.HO, x)
-#gc()
+rm(HO, c.cold.HO, x)
+gc()
 
 print("SelectionCandidatesColdPixel")
 proc.time()
@@ -216,7 +214,7 @@ u200<-ustar.est/k*log(200/zom.est)
 # Zom for all pixels
 zom<-exp(azom+bzom*NDVI[]) # Changed from Raster to Vector
 
-#gc()
+gc()
 
 # Initial values
 ustar<-NDVI
@@ -231,7 +229,7 @@ rownames(value.pixels.ref)<-c("hot","cold")
 H.hot<-value.pixels.ref["hot","Rn"]-value.pixels.ref["hot","G"]  
 value.pixel.rah<-value.pixels.ref["hot","rah"]
 
-#gc()
+gc()
 
 i<-1
 Erro<-TRUE
@@ -239,63 +237,61 @@ Erro<-TRUE
 print("BeforeRahCycle")
 proc.time()
 
-rahCycle <- function(){
-  # Beginning of the cycle stability
-  while(Erro){
-    rah.hot.0<-value.pixel.rah[i] # Value
-    
-    # Hot and cold pixels      
-    dt.hot<-H.hot*rah.hot.0/(rho*cp) # Value
-    b<-dt.hot/(value.pixels.ref["hot","TS"]-value.pixels.ref["cold","TS"]) # Value
-    a<- -b*(value.pixels.ref["cold","TS"]-273.15) # Value
-    
-    #gc()
+rah.hot <- NULL
 
-    # All pixels
-    H<-rho*cp*(a+b*(TS[]-273.15))/rah[] # Changed from Raster to Vector
-    L<- -1*((rho*cp*ustar[]^3*TS[])/(k*g*H)) # Changed from Raster to Vector
-    y_0.1<-(1-16*0.1/L)^0.25 # Changed from Raster to Vector
-    y_2<-(1-16*2/L)^0.25 # Changed from Raster to Vector
-    x200<-(1-16*200/L)^0.25 # Changed from Raster to Vector
+# Beginning of the cycle stability
+while(Erro){
+  rah.hot.0<-value.pixel.rah[i] # Value
+  
+  # Hot and cold pixels      
+  dt.hot<-H.hot*rah.hot.0/(rho*cp) # Value
+  b<-dt.hot/(value.pixels.ref["hot","TS"]-value.pixels.ref["cold","TS"]) # Value
+  a<- -b*(value.pixels.ref["cold","TS"]-273.15) # Value
+  
+  gc()
 
-    #gc()
+  # All pixels
+  H<-rho*cp*(a+b*(TS[]-273.15))/rah[] # Changed from Raster to Vector
+  L<- -1*((rho*cp*ustar[]^3*TS[])/(k*g*H)) # Changed from Raster to Vector
+  y_0.1<-(1-16*0.1/L)^0.25 # Changed from Raster to Vector
+  y_2<-(1-16*2/L)^0.25 # Changed from Raster to Vector
+  x200<-(1-16*200/L)^0.25 # Changed from Raster to Vector
 
-    psi_0.1<-2*log((1+y_0.1^2)/2) # Changed from Raster to Vector
-    psi_0.1[L>0 &!is.na(L)]<--5*(0.1/L[L>0 &!is.na(L)]) # Changed from Raster to Vector
-    psi_2<-2*log((1+y_2^2)/2)  # Changed from Raster to Vector
-    psi_2[L>0 &!is.na(L) ]<--5*(2/L[L>0 &!is.na(L)]) # Changed from Raster to Vector
-    psi_200<-2*log((1+x200)/2)+log((1+x200^2)/2)-2*atan(x200)+0.5*pi # Changed from Raster to Vector
-    psi_200[L>0 &!is.na(L) ]<--5*(2/L[(L>0 &!is.na(L))]) # Changed from Raster to Vector
-    ustar<-k*u200/(log(200/zom)-psi_200) # Changed from Raster to Vector # Friction velocity for all pixels
+  gc()
 
-    #gc()
+  psi_0.1<-2*log((1+y_0.1^2)/2) # Changed from Raster to Vector
+  psi_0.1[L>0 &!is.na(L)]<--5*(0.1/L[L>0 &!is.na(L)]) # Changed from Raster to Vector
+  psi_2<-2*log((1+y_2^2)/2)  # Changed from Raster to Vector
+  psi_2[L>0 &!is.na(L) ]<--5*(2/L[L>0 &!is.na(L)]) # Changed from Raster to Vector
+  psi_200<-2*log((1+x200)/2)+log((1+x200^2)/2)-2*atan(x200)+0.5*pi # Changed from Raster to Vector
+  psi_200[L>0 &!is.na(L) ]<--5*(2/L[(L>0 &!is.na(L))]) # Changed from Raster to Vector
+  ustar<-k*u200/(log(200/zom)-psi_200) # Changed from Raster to Vector # Friction velocity for all pixels
 
-    rah<-NDVI
-    rah[]<-(log(2/0.1)-psi_2+psi_0.1)/(ustar*k) # Changed from Raster to Vector # Aerodynamic resistency for all pixels
-    rah.hot<-extract(rah,matrix(ll_ref["hot",],1,2)) # Value
-    value.pixel.rah<-c(value.pixel.rah,rah.hot) # Value
-    Erro<-(abs(1-rah.hot.0/rah.hot)>=0.1)
-    i<-i+1
-  }
+  gc()
 
-  #rm(H, L, y_0.1, y_2, x200, psi_0.1, psi_2, psi_200, ll_ref)
-  #gc()
-
-  return (rah.hot)
+  rah<-NDVI
+  rah[]<-(log(2/0.1)-psi_2+psi_0.1)/(ustar*k) # Changed from Raster to Vector # Aerodynamic resistency for all pixels
+  rah.hot<-extract(rah,matrix(ll_ref["hot",],1,2)) # Value
+  value.pixel.rah<-c(value.pixel.rah,rah.hot) # Value
+  Erro<-(abs(1-rah.hot.0/rah.hot)>=0.1)
+  i<-i+1
 }
 
-rah.hot <- NULL;
-tryCatch({
-  res <- withTimeout({
-    rah.hot <- rahCycle();
-  }, timeout=1800);
-}, TimeoutException=function(ex) {
-  cat("Image phase two processing timedout. Exiting with 124 code...\n");
-  quit("no", 124, FALSE)
-})
+rm(H, L, y_0.1, y_2, x200, psi_0.1, psi_2, psi_200, ll_ref)
+gc()
 
-#rm(zom, ustar)
-#gc()
+#rah.hot <- NULL;
+#tryCatch({
+#  res <- withTimeout({
+#    rah.hot <- rahCycle();
+#  }, timeout=1800);
+#}, TimeoutException=function(ex) {
+#  cat("Image phase two processing timedout. Exiting with 124 code...\n");
+#  quit("no", 124, FALSE)
+#})
+
+rm(zom, ustar)
+gc()
 
 print("RahCycle")
 proc.time()
@@ -307,8 +303,8 @@ dt.hot<-H.hot*rah.hot/(rho*cp)
 b<-dt.hot/(value.pixels.ref["hot","TS"]-value.pixels.ref["cold","TS"]) 
 a<- -b*(value.pixels.ref["cold","TS"]-273.15)       
 
-#rm(value.pixels.ref)
-#gc()                   
+rm(value.pixels.ref)
+gc()                   
 
 proc.time()
 
@@ -318,20 +314,20 @@ H<-rho*cp*(a+b*(TS[]-273.15))/rah[] # Vector
 subset <- !is.na(H) & !is.na(Rn[]-G[]) & H > (Rn[]-G[])
 H[subset] <- Rn[subset]-G[subset]# Vector
 
-#rm(rah, subset, TS)
-#gc()
+rm(rah, subset, TS)
+gc()
 
 proc.time()
 
 aux<-Rn[]-G[]
-#rm(Rn, G)
-#gc()
+rm(Rn, G)
+gc()
 
 # Instant latent heat flux (LE)
 LE<-aux-H
 
-#rm(H)
-#gc()
+rm(H)
+gc()
 
 # Upscalling temporal
 dr<-(1/dist.dia.juliano)^2 		# Inverse square of the distance on Earth-SOL
@@ -349,15 +345,15 @@ Rs24h<-F_int*sqrt(max(table.sw$V7[])-min(table.sw$V7[]))*Ra24h
 FL<-110                                
 Rn24h_dB<-(1-alb[])*Rs24h-FL*Rs24h/Ra24h		# Method of Bruin #VETOR
 
-#rm(alb)
-#gc()
+rm(alb)
+gc()
 
 # Evapotranspiration fraction Bastiaanssen
 EF<-NDVI
 EF[]<-LE/(aux)
 
-#rm(LE, aux)
-#gc()
+rm(LE, aux)
+gc()
 
 # Sensible heat flux 24 hours (H24h)
 #H24h_dB<-(1-EF[])*Rn24h_dB
@@ -365,15 +361,15 @@ EF[]<-LE/(aux)
 # Latent Heat Flux 24 hours (LE24h)
 LE24h_dB<-EF[]*Rn24h_dB
 
-#rm(Rn24h_dB)
-#gc()
+rm(Rn24h_dB)
+gc()
 
 # Evapotranspiration 24 hours (ET24h)
 ET24h_dB<-NDVI
 ET24h_dB[]<-LE24h_dB*86400/((2.501-0.00236* (max(table.sw$V7[])+min(table.sw$V7[]))/2)*10^6)
 
-#rm(LE24h_dB, NDVI)
-#gc()
+rm(LE24h_dB, NDVI)
+gc()
 
 print("CalculateEvapo24h")
 proc.time()
@@ -397,7 +393,7 @@ newEFNCDF4<-nc_create(file_output,newEFValues)
 ncvar_put(newEFNCDF4,"EF",oldEFValues,start=c(1,1,1),count=c(raster.elevation@ncols,raster.elevation@nrows,1))
 nc_close(newEFNCDF4)
 
-#gc()
+gc()
 
 proc.time()
 
@@ -414,7 +410,7 @@ newET24hNCDF4<-nc_create(file_output,newET24hValues)
 ncvar_put(newET24hNCDF4, "ET24h", oldET24hValues, start=c(1, 1, 1), count=c(raster.elevation@ncols, raster.elevation@nrows, 1))
 nc_close(newET24hNCDF4)
 
-#gc()
+gc()
 
 print("WriteOutput")
 proc.time()
